@@ -1,14 +1,14 @@
 // ============================================================
 // @country/pe — Dashboard.tsx
 // Página Vista 360 con identidad visual peruana.
-// Usa componentes de @yopen/ui-core + estilos PE específicos.
+// Usa componentes de @buchorg/ui-core + estilos PE específicos.
 // ============================================================
 import React from 'react';
-import type { CountryPageProps } from '@yopen/plugin-sdk';
+import type { CountryPageProps } from '@buchorg/plugin-sdk';
 import {
   StatCard, SectionTitle, FlagBar, TaxInfoBox,
   OrdersTable, type OrderRow,
-} from '@yopen/ui-core';
+} from '@buchorg/ui-core';
 import { peConfig } from '../config';
 
 // -----------------------------------------------------------

@@ -1,4 +1,4 @@
-import type { CountryTranslations } from '@yopen/plugin-sdk';
+import type { CountryTranslations } from '@buchorg/plugin-sdk';
 
 export const peI18n: CountryTranslations = {
   common: {

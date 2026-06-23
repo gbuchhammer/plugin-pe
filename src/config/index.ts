@@ -1,4 +1,4 @@
-import type { CountryConfig } from '@yopen/plugin-sdk';
+import type { CountryConfig } from '@buchorg/plugin-sdk';
 
 export const peConfig: CountryConfig = {
   countryCode:    'PE',

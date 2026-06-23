@@ -2,7 +2,7 @@
 // @country/pe — Plugin principal de Perú
 // Entry point: exporta el CountryPlugin completo.
 // ============================================================
-import type { CountryPlugin } from '@yopen/plugin-sdk';
+import type { CountryPlugin } from '@buchorg/plugin-sdk';
 import { peConfig } from './config';
 import { peI18n }   from './config/i18n';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@buchorg/country-pe",
+  "name": "@buchorg/plugin-pe",
   "version": "1.0.0",
   "description": "Country shell — Perú — YOpen Framework",
   "main": "dist/index.js",
