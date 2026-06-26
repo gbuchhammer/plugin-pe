@@ -1,2 +1,4 @@
 # Credenciales y archivos de configuración locales
-#.npmrc
+node_modules
+dist
+package-lock.json

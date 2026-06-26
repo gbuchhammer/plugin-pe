@@ -10,9 +10,42 @@ import {
   OrdersTable, type OrderRow,
 } from '@buchorg/ui-core';
 import { peConfig } from '../config';
+import { useOrders } from '../hooks/useOrders';
+import type { ApiOrder } from '../services/types';
 
 // -----------------------------------------------------------
-// Datos de ejemplo — en producción vendrían de una API
+// Mapea el dato crudo de la API al formato visual de la tabla
+// -----------------------------------------------------------
+const STATUS_MAP: Record<ApiOrder['status'], { variant: OrderRow['status']; label: string }> = {
+  delivered:   { variant: 'success', label: 'Entregado'   },
+  in_transit:  { variant: 'warning', label: 'En tránsito' },
+  returned:    { variant: 'danger',  label: 'Devuelto'    },
+  processing:  { variant: 'neutral', label: 'Procesando'  },
+  true:   { variant: 'success', label: 'Entregado'   },
+  false:  { variant: 'warning', label: 'En tránsito' },
+};
+
+const DOC_LABEL: Record<ApiOrder['documentType'], string> = {
+  boleta:  'Boleta',
+  factura: 'Factura',
+};
+
+function mapApiOrderToRow(order: ApiOrder, formatCurrency: (n: number) => string): OrderRow {
+  const status = STATUS_MAP[order.status];
+  return {
+    id: order.orderCode,
+    customer: order.customerName,
+    amount: formatCurrency(order.amount),
+    status: status.variant,
+    statusText: status.label,
+    docType: DOC_LABEL[order.documentType],
+  };
+}
+
+// -----------------------------------------------------------
+// Stats — siguen siendo locales por ahora (no forman parte
+// del alcance de este cambio); el array de pedidos sí
+// viene del servicio.
 // -----------------------------------------------------------
 function buildStats(formatCurrency: (n: number) => string, t: (k: string) => string) {
   return [
@@ -23,23 +56,13 @@ function buildStats(formatCurrency: (n: number) => string, t: (k: string) => str
   ] as const;
 }
 
-function buildOrders(formatCurrency: (n: number) => string): OrderRow[] {
-  return [
-    { id: 'PE-00142', customer: 'María Quispe Torres',  amount: formatCurrency(1_250), status: 'success', statusText: 'Entregado',  docType: 'Boleta'  },
-    { id: 'PE-00141', customer: 'Carlos Mamani Huanca', amount: formatCurrency(4_800), status: 'warning', statusText: 'En tránsito',docType: 'Factura' },
-    { id: 'PE-00140', customer: 'Rosa Flores Condori',  amount: formatCurrency(320),   status: 'success', statusText: 'Entregado',  docType: 'Boleta'  },
-    { id: 'PE-00139', customer: 'Luis Ccahuana Apaza',  amount: formatCurrency(9_600), status: 'danger',  statusText: 'Devuelto',   docType: 'Factura' },
-    { id: 'PE-00138', customer: 'Ana Huamán Paredes',   amount: formatCurrency(680),   status: 'neutral', statusText: 'Procesando', docType: 'Boleta'  },
-  ];
-}
-
 // -----------------------------------------------------------
 // Component
 // -----------------------------------------------------------
 export default function DashboardPE({ t, formatCurrency }: CountryPageProps) {
   const { theme } = peConfig;
-  const stats  = buildStats(formatCurrency, t);
-  const orders = buildOrders(formatCurrency);
+  const stats = buildStats(formatCurrency, t);
+  const { status, orders, message, retry } = useOrders(5);
 
   return (
     <>
@@ -78,6 +101,9 @@ export default function DashboardPE({ t, formatCurrency }: CountryPageProps) {
         @keyframes skeleton-shimmer {
           0%   { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+        @keyframes pe-spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
@@ -120,14 +146,60 @@ export default function DashboardPE({ t, formatCurrency }: CountryPageProps) {
           </div>
 
           <SectionTitle>📋 {t('dashboard.recentOrders')}</SectionTitle>
-          <OrdersTable
-            rows={orders}
-            headerBg={theme.primaryColor}
-            idColor={theme.primaryColor}
-            docBg={`rgba(200,16,46,.1)`}
-            docColor={theme.primaryColor}
-            docBorder={`rgba(200,16,46,.25)`}
-          />
+
+          {status === 'loading' && (
+            <div style={{
+              padding: '40px 20px', textAlign: 'center',
+              background: 'var(--country-surface)', borderRadius: 12,
+              border: '1px solid var(--country-border)',
+            }}>
+              <div style={{
+                width: 28, height: 28, margin: '0 auto 12px',
+                border: `3px solid color-mix(in srgb, ${theme.primaryColor} 20%, transparent)`,
+                borderTopColor: theme.primaryColor,
+                borderRadius: '50%', animation: 'pe-spin .7s linear infinite',
+              }} />
+              <span style={{ fontSize: 13, color: 'var(--country-text-secondary)' }}>
+                Cargando pedidos…
+              </span>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div style={{
+              padding: '24px 20px', textAlign: 'center',
+              background: 'rgba(200,16,46,.05)', borderRadius: 12,
+              border: '1px solid rgba(200,16,46,.2)',
+            }}>
+              <div style={{ fontSize: 14, color: theme.primaryColor, marginBottom: 4, fontWeight: 600 }}>
+                No se pudieron cargar los pedidos
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--country-text-secondary)', marginBottom: 14 }}>
+                {message}
+              </div>
+              <button
+                onClick={retry}
+                style={{
+                  background: theme.primaryColor, color: '#fff', border: 'none',
+                  padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <OrdersTable
+              rows={orders.map(o => mapApiOrderToRow(o, formatCurrency))}
+              headerBg={theme.primaryColor}
+              idColor={theme.primaryColor}
+              docBg={`rgba(200,16,46,.1)`}
+              docColor={theme.primaryColor}
+              docBorder={`rgba(200,16,46,.25)`}
+            />
+          )}
 
           <TaxInfoBox
             icon="🧾"
